@@ -26,7 +26,10 @@ def open_time(control_dist_km, brevet_dist_km, brevet_start_time):
        An arrow object indicating the control open time.
        This will be in the same time zone as the brevet start time.
     """
-    return arrow.now()
+    #figure out hours, minutes, round minutes to nearest integer
+    
+
+    return brevet_start_time.shift(hours=hours, minutes=minutes)
 
 
 def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
