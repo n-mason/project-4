@@ -13,13 +13,10 @@ import arrow
 #  same arguments.
 #
 
-def find_time_val(dist, speed):
-   hours_value = dist // speed # Floor division to get only the hours amount
-   # Now, separate into hours and mins
-   mins_value = ((dist / speed) - hours_value) * 60 # Multiplying resulting fractional part by 60
+def find_time_val(control_sum):
+   hours_value = int(control_sum) # Floor division to get only the hours amount
+   mins_value = (control_sum - hours_value) * 60 # Multiplying resulting fractional part by 60
    mins_value = round(mins_value)
-   # SHOULD CHECK ABOUT 300km test, 300km checkpoint returns 9 for opening time,
-   # But if rounding to the nearest minute, the shift time should be 9H1 because (200/34)+(100/32)=5H53+3H7.5 mins = 8H60.5 mins so 9H1 min
 
    return (hours_value, mins_value)
    
@@ -53,70 +50,58 @@ def open_time(control_dist_km, brevet_dist_km, brevet_start_time):
          # If control distance is beyond 200km, do the following calculations
          dist_traveled = 0
          dist_remaining = control_dist_km
-         hours_mins_dict = {}
-         hm_dict_ind = 0
-         travel_level = 0
          
+         travel_level = 0
+         control_sum = 0
          subt_amnt = 0
             
          while((dist_remaining > 200) and ((dist_remaining-subt_amnt) > 0)):
             #print(hours_mins_dict)
             # If control is beyond 200km, have to use a different speed value for that part and for the first 200 use 34 for speed
-            # Ex for 350, have 200/34 + 150/32 = 5H53 + 4H41 = 10H34
+            # Ex for 350, have 200/34 + 150/32 = 10.56985... -> 10H34
    
             if dist_traveled < 200: # Going to define each block as a certain distance level, this is distance level 1
-               hours_1, mins_1 = find_time_val(200, 34)
-               hours_mins_dict[hm_dict_ind] = (hours_1, mins_1) # log the hours and mins values in a dict
+               control_sum += (200/34)
                travel_level = 1
                dist_traveled += 200
                dist_remaining -= 200
                subt_amnt = 200
    
             elif 200 <= dist_traveled < 400: # distance level 2
-               hours_2, mins_2 = find_time_val(200, 32)
-               hours_mins_dict[hm_dict_ind] = (hours_2, mins_2)
+               control_sum += (200/32)
                travel_level = 2
                dist_traveled += 200
                dist_remaining -= 200
                subt_amnt = 200
    
             elif 400 <= dist_traveled < 600: # distance level 3
-               hours_3, mins_3 = find_time_val(200, 30)
-               hours_mins_dict[hm_dict_ind] = (hours_3, mins_3)
+               control_sum += (200/30)
                travel_level = 3
                dist_traveled += 200
                dist_remaining -= 200
                subt_amnt = 400 # 400 for the next control location range
    
             elif 600 <= dist_traveled < 1000: # distance level 4, the final level
-               hours_4, mins_4 = find_time_val(200, 28)
-               hours_mins_dict[hm_dict_ind] = (hours_4, mins_4)
+               control_sum += (200/28)
                travel_level = 4
-            
-            hm_dict_ind += 1
     
          # Now have to deal with the remaining amount of distance that is less than 200, and based on how much have traveled
          # will decide the max speed to divide by
-         # Based on the travel_level, will look in the dict to determine the right speed to use for the remaining time vals
+         # Based on the travel_level, will look in the dict to determine the right speed to use for the remaining time
          
          travel_level_dict = {0: 34, 1: 32, 2:30, 3:28, 4:26}
    
          speed_to_use = travel_level_dict[travel_level]
-         hours_final, mins_final = find_time_val(dist_remaining, speed_to_use)
-         hours_mins_dict[hm_dict_ind] = (hours_final, mins_final)
-    
-         # Now that have the values in the dict, add up all the hours and mins
-         for ind, time_tuple in hours_mins_dict.items():
-            hours, mins = time_tuple
-            hours_value += hours
-            mins_value += mins
+         control_sum += (dist_remaining/speed_to_use)
+         hours_value, mins_value = find_time_val(control_sum)
     
       else: # control dist is <= 200
          if(control_dist_km == 0): # For the brevet, the first open time is just the start of the race, so don't shift the start time
             hours_value = 0
             mins_value = 0
          else:
-            hours_value, mins_value = find_time_val(control_dist_km, 34) # For 200 and below, use 34 for speed
+            control_sum = control_dist_km/34
+            hours_value, mins_value = find_time_val(control_sum) # For 200 and below, use 34 for speed
       
       while(mins_value >= 60):
                mins_value -= 60
@@ -152,27 +137,27 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
        print("ERROR control_dist exceeds the allowed distance amount")
    else:
       if(control_dist_km >= brevet_dist_km):
-             # This is the last control, so check the data vals from Wiki
-             # Still find the overall time if control dist is within 20km, 
-             # so for 400km if control is 420km find time for 400km
-             if(control_dist_km > 1000):
-                 control_dist_km = 1000
-             elif(600 < control_dist_km < 1000):
-                 control_dist_km = 600
-             elif(400 < control_dist_km < 600):
-                 control_dist_km = 400
-             elif(300 < control_dist_km < 400):
-                 control_dist_km = 300
-             elif(200 < control_dist_km < 300):
-                 control_dist_km = 200
+         # This is the last control, so check the data vals from Wiki
+         # Still find the overall time if control dist is within 20km, 
+         # so for 400km if control is 420km find time for 400km
+         if(control_dist_km > 1000):
+            control_dist_km = 1000
+         elif(600 < control_dist_km < 1000):
+            control_dist_km = 600
+         elif(400 < control_dist_km < 600):
+            control_dist_km = 400
+         elif(300 < control_dist_km < 400):
+            control_dist_km = 300
+         elif(200 < control_dist_km < 300):
+            control_dist_km = 200
 
-             hours_last, mins_last = final_cp_times[control_dist_km]
-             #print(hours)
-             #print(mins)
-             hours_last = int(hours_last)
-             mins_last = int(mins_last)
+         hours_last, mins_last = final_cp_times[control_dist_km]
+         #print(hours)
+         #print(mins)
+         hours_last = int(hours_last)
+         mins_last = int(mins_last)
 
-             return brevet_start_time.shift(hours=hours_last, minutes=mins_last)
+         return brevet_start_time.shift(hours=hours_last, minutes=mins_last)
 
       if(control_dist_km < 60):
           #print(f"near 60km, control dist is: {control_dist_km}")
@@ -197,50 +182,43 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
          # If control distance is beyond 200km, do the following calculations
          dist_traveled = 0
          dist_remaining = control_dist_km
-         hours_mins_dict = {}
-         hm_dict_ind = 0
+         
          travel_level = 0
          subt_amnt = 0
+         control_sum = 0
             
          while((dist_remaining > 200) and ((dist_remaining-subt_amnt) > 0)):
             #print(hours_mins_dict)
             # If control is beyond 600km, have to use a different speed value for that part and for the first 600 use 15 for the speed
-            # Ex for 890, have 600/15 + 290/11.428 = 65H23
+            # Ex for 890, have 600/15 + 290/11.428 -> 65H23
    
             if dist_traveled < 200: # Going to define each block as a certain distance level, this is distance level 1
-               hours_1, mins_1 = find_time_val(200, 15)
-               hours_mins_dict[hm_dict_ind] = (hours_1, mins_1) # log the hours and mins values in a dict
+               control_sum += (200/15)
                travel_level = 1
                dist_traveled += 200
                dist_remaining -= 200
                subt_amnt = 200
    
             elif 200 <= dist_traveled < 400: # distance level 2
-               hours_2, mins_2 = find_time_val(200, 15)
-               hours_mins_dict[hm_dict_ind] = (hours_2, mins_2)
+               control_sum += (200/15)
                travel_level = 2
                dist_traveled += 200
                dist_remaining -= 200
                subt_amnt = 200
    
             elif 400 <= dist_traveled < 600: # distance level 3
-               hours_3, mins_3 = find_time_val(200, 15)
-               hours_mins_dict[hm_dict_ind] = (hours_3, mins_3)
+               control_sum += (200/15)
                travel_level = 3
                dist_traveled += 200
                dist_remaining -= 200
                subt_amnt = 400 # 400 for the next control location range, 600-1000
    
             elif 600 <= dist_traveled < 1000: # distance level 4, the final level
-               hours_4, mins_4 = find_time_val(200, 11.428)
-               hours_mins_dict[hm_dict_ind] = (hours_4, mins_4)
+               control_sum += (200/11.428)
                travel_level = 4
                dist_traveled += 400
                dist_remaining -= 400
                subt_amnt = 300
-            
-            hm_dict_ind += 1
-      
          
          # Now have to deal with the remaining amount of distance that is less than 200, and based on how much have traveled
          # will decide the max speed to divide by
@@ -251,25 +229,16 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
          travel_level_dict = {0: 15, 1: 15, 2: 15, 3: 11.428, 4: 13.333}
    
          speed_to_use = travel_level_dict[travel_level]
-         #print(f"going to use dist: {dist_remaining} and speed: {speed_to_use}")
-         hours_final, mins_final = find_time_val(dist_remaining, speed_to_use)
-         hours_mins_dict[hm_dict_ind] = (hours_final, mins_final)
-         
-   
-         # Now that have the values in the dict, add up all the hours and mins
-         #print(hours_mins_dict)
-         for ind, time_tuple in hours_mins_dict.items():
-            hours, mins = time_tuple
-            hours_value += hours
-            mins_value += mins
-            
-    
+         control_sum += (dist_remaining/speed_to_use)
+         hours_value, mins_value = find_time_val(control_sum)
+ 
       else: # control dist is <= 200 but not within first 60km
          if(control_dist_km == 0): # For the brevet, the first close time is one hour ahead
             hours_value = 1
             mins_value = 0
          else:
-            hours_value, mins_value = find_time_val(control_dist_km, 15) # For 200 and below, use 15 for speed
+            control_sum = control_dist_km/15
+            hours_value, mins_value = find_time_val(control_sum) # For 200 and below, use 15 for speed
             
       while(mins_value >= 60):
         mins_value -= 60
