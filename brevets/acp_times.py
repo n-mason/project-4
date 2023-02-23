@@ -40,8 +40,9 @@ def open_time(control_dist_km, brevet_dist_km, brevet_start_time):
    # Then, once have that speed, use the control_dist and speed to calculate hours and mins
    # Then shift the brevet start time with those hour and min values
    max_speed = 1
+   max_check = control_dist_km * 1.2
 
-   if(control_dist_km > brevet_dist_km):
+   if(control_dist_km > max_check):
       print("ERROR: Control distance can not be larger than the distance of the overall brevet")
       return 0
    else:
@@ -116,6 +117,7 @@ def open_time(control_dist_km, brevet_dist_km, brevet_start_time):
             mins_value = 0
          else:
             hours_value, mins_value = find_time_val(control_dist_km, 34) # For 200 and below, use 34 for speed
+      
       while(mins_value >= 60):
                mins_value -= 60
                hours_value += 1
@@ -143,15 +145,37 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
    hours_value = 0
    mins_value = 0
    
-   time_amt_to_add = 0
-   max_check = 1.2 * control_dist_km
+   max_check = control_dist_km * 1.2
+   final_cp_times = {200: (13, 30), 300: (20,0), 400: (27,0), 600: (40,0), 1000: (75,0)}
    
    if(control_dist_km > max_check):
        print("ERROR control_dist exceeds the allowed distance amount")
    else:
+      if(control_dist_km >= brevet_dist_km):
+             # This is the last control, so check the data vals from Wiki
+             # Still find the overall time if control dist is within 20km, 
+             # so for 400km if control is 420km find time for 400km
+             if(control_dist_km > 1000):
+                 control_dist_km = 1000
+             elif(600 < control_dist_km < 1000):
+                 control_dist_km = 600
+             elif(400 < control_dist_km < 600):
+                 control_dist_km = 400
+             elif(300 < control_dist_km < 400):
+                 control_dist_km = 300
+             elif(200 < control_dist_km < 300):
+                 control_dist_km = 200
+
+             hours_last, mins_last = final_cp_times[control_dist_km]
+             #print(hours)
+             #print(mins)
+             hours_last = int(hours_last)
+             mins_last = int(mins_last)
+
+             return brevet_start_time.shift(hours=hours_last, minutes=mins_last)
+
       if(control_dist_km < 60):
           #print(f"near 60km, control dist is: {control_dist_km}")
-          #ASK ABOUT 300km, because on calc this has closing time of 20:00
           
           # Within 60km, use cont_dist/20 + 1 hr instead of regular calcs
           hours_near = (control_dist_km // 20)
@@ -161,12 +185,14 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
           #print(f"hours_near: {hours_near} minsn: {mins_near}")
           
           hours_near += 1
+          hours_near = int(hours_near)
+          mins_near = int(mins_near)
           
           return brevet_start_time.shift(hours=hours_near, minutes=mins_near)
-          
-          #time_amt_to_add = control_dist_km / 20 * 0 # Not sure if this gets added, gives correct output for 400km calc output but for 600 km the final closing time is simply 600/15 = 40, nothing gets added to the final checkpoint
+   
       elif(control_dist_km > 200):
          #print(f"control dist: {control_dist_km} is greater than 200 so doing fancy stuff")
+         #Think need to add code for the wiki closing times in this elif block, if the checkpoint is the final checkpoint refer to wiki vals
          
          # If control distance is beyond 200km, do the following calculations
          dist_traveled = 0
@@ -174,7 +200,6 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
          hours_mins_dict = {}
          hm_dict_ind = 0
          travel_level = 0
-         
          subt_amnt = 0
             
          while((dist_remaining > 200) and ((dist_remaining-subt_amnt) > 0)):
@@ -215,13 +240,14 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
                subt_amnt = 300
             
             hm_dict_ind += 1
-        
+      
          
          # Now have to deal with the remaining amount of distance that is less than 200, and based on how much have traveled
          # will decide the max speed to divide by
          # Based on the travel_level, will look in the dict to determine the right speed to use
          # Max length of ACP brevet is 1000km, so for travel_level 5 just set speed to a large number, brevets with distance
          # from 1000 to 1300 use different calculator, so doesn't really apply here
+         
          travel_level_dict = {0: 15, 1: 15, 2: 15, 3: 11.428, 4: 13.333}
    
          speed_to_use = travel_level_dict[travel_level]
@@ -229,15 +255,13 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
          hours_final, mins_final = find_time_val(dist_remaining, speed_to_use)
          hours_mins_dict[hm_dict_ind] = (hours_final, mins_final)
          
-    
+   
          # Now that have the values in the dict, add up all the hours and mins
          #print(hours_mins_dict)
          for ind, time_tuple in hours_mins_dict.items():
             hours, mins = time_tuple
             hours_value += hours
             mins_value += mins
-            
-         mins_value += time_amt_to_add
             
     
       else: # control dist is <= 200 but not within first 60km
@@ -246,12 +270,12 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
             mins_value = 0
          else:
             hours_value, mins_value = find_time_val(control_dist_km, 15) # For 200 and below, use 15 for speed
-            if(control_dist_km == 200): #overall time limit for 200 should be 10 mins longer according to the rules
-                mins_value += 10
             
       while(mins_value >= 60):
         mins_value -= 60
         hours_value += 1
+
+      hours_value = int(hours_value)
+      mins_value = int(mins_value)
       
       return brevet_start_time.shift(hours=hours_value, minutes=mins_value)
-
