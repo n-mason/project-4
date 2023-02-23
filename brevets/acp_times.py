@@ -12,13 +12,14 @@ import arrow
 #  these signatures even if you don't use all the
 #  same arguments.
 #
-
+"""
 def find_time_val(control_sum):
    hours_value = int(control_sum) # Floor division to get only the hours amount
    mins_value = (control_sum - hours_value) * 60 # Multiplying resulting fractional part by 60
    mins_value = round(mins_value)
 
    return (hours_value, mins_value)
+"""
    
 def open_time(control_dist_km, brevet_dist_km, brevet_start_time):
    """
@@ -93,7 +94,10 @@ def open_time(control_dist_km, brevet_dist_km, brevet_start_time):
    
          speed_to_use = travel_level_dict[travel_level]
          control_sum += (dist_remaining/speed_to_use)
-         hours_value, mins_value = find_time_val(control_sum)
+         #hours_value, mins_value = find_time_val(control_sum)
+         hours_value = int(control_sum) # Floor division to get only the hours amount
+         mins_value = (control_sum - hours_value) * 60 # Multiplying resulting fractional part by 60
+         mins_value = round(mins_value)
     
       else: # control dist is <= 200
          if(control_dist_km == 0): # For the brevet, the first open time is just the start of the race, so don't shift the start time
@@ -101,7 +105,10 @@ def open_time(control_dist_km, brevet_dist_km, brevet_start_time):
             mins_value = 0
          else:
             control_sum = control_dist_km/34
-            hours_value, mins_value = find_time_val(control_sum) # For 200 and below, use 34 for speed
+            #hours_value, mins_value = find_time_val(control_sum) # For 200 and below, use 34 for speed
+            hours_value = int(control_sum) # Floor division to get only the hours amount
+            mins_value = (control_sum - hours_value) * 60 # Multiplying resulting fractional part by 60
+            mins_value = round(mins_value)
       
       while(mins_value >= 60):
                mins_value -= 60
@@ -230,7 +237,10 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
    
          speed_to_use = travel_level_dict[travel_level]
          control_sum += (dist_remaining/speed_to_use)
-         hours_value, mins_value = find_time_val(control_sum)
+         #hours_value, mins_value = find_time_val(control_sum)
+         hours_value = int(control_sum) # Floor division to get only the hours amount
+         mins_value = (control_sum - hours_value) * 60 # Multiplying resulting fractional part by 60
+         mins_value = round(mins_value)
  
       else: # control dist is <= 200 but not within first 60km
          if(control_dist_km == 0): # For the brevet, the first close time is one hour ahead
@@ -238,7 +248,10 @@ def close_time(control_dist_km, brevet_dist_km, brevet_start_time):
             mins_value = 0
          else:
             control_sum = control_dist_km/15
-            hours_value, mins_value = find_time_val(control_sum) # For 200 and below, use 15 for speed
+            #hours_value, mins_value = find_time_val(control_sum) # For 200 and below, use 15 for speed
+            hours_value = int(control_sum) # Floor division to get only the hours amount
+            mins_value = (control_sum - hours_value) * 60 # Multiplying resulting fractional part by 60
+            mins_value = round(mins_value)
             
       while(mins_value >= 60):
         mins_value -= 60
